@@ -1,0 +1,31 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "Matt Martin",
+    "longName": "Flick Seconds",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/BTDisconnected.png",
+                "name": "BT_DISCONNECTED",
+                "type": "png"
+            },
+            {
+                "file": "images/BTConnected.png",
+                "name": "BT_CONNECTED",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "Flick Seconds",
+    "uuid": "235e0d66-ca82-4619-b937-e522bd15b2fd",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
