@@ -10,6 +10,7 @@ static bool s_first_run_bool = true;
 static bool s_show_seconds_bool;
 static int s_show_seconds_duration_int = 15;
 static time_t s_hide_seconds_time_t;
+static InverterLayer *s_inv_layer;
 
 static void format_time() {
   if (s_show_seconds_bool == true) {
@@ -88,18 +89,12 @@ static void bluetooth_handler(bool connected) {
     
   // Set colors and connection image
   if (connected == true) {
-    window_set_background_color(s_main_window, GColorBlack);
-    text_layer_set_text_color(s_time_layer, GColorWhite);
-    text_layer_set_text_color(s_date_layer, GColorWhite);
-    text_layer_set_text_color(s_battery_layer, GColorWhite);
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_connected_bitmap);
   } else {
-    window_set_background_color(s_main_window, GColorWhite);
-    text_layer_set_text_color(s_time_layer, GColorBlack);
-    text_layer_set_text_color(s_date_layer, GColorBlack);
-    text_layer_set_text_color(s_battery_layer, GColorBlack);
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_disconnected_bitmap);    
   }
+  
+  layer_set_hidden(inverter_layer_get_layer(s_inv_layer), connected);
   
 }
 
@@ -123,27 +118,32 @@ static void main_window_load(Window *window) {
     // Create time TextLayer
   s_time_layer = text_layer_create(GRect(0, 35, window_bounds.size.w, 44));
   text_layer_set_background_color(s_time_layer, GColorClear);
+  text_layer_set_text_color(s_time_layer, GColorWhite);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   
   // Create date TextLayer
   s_date_layer = text_layer_create(GRect(0, 82, window_bounds.size.w, 26));
   text_layer_set_background_color(s_date_layer, GColorClear);
-  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_text_color(s_date_layer, GColorWhite);
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   
   // Create battery TextLayer
   s_battery_layer = text_layer_create(GRect(window_bounds.size.w / 2, 0, (window_bounds.size.w / 2) - 2, 18));
-  
   text_layer_set_background_color(s_battery_layer, GColorClear);
-  text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_color(s_battery_layer, GColorWhite);
   text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
-  text_layer_set_text(s_battery_layer, "100%");
+  text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  //text_layer_set_text(s_battery_layer, "100%");
   
   // Create bluetooth BitmapLayer
   s_bt_connected_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BT_CONNECTED);
   s_bt_disconnected_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BT_DISCONNECTED);
   s_bt_layer = bitmap_layer_create(GRect(3,3,12,11));
-    
+  
+  // Create bluetooth connected InverterLayer
+  s_inv_layer = inverter_layer_create(GRect(0,0,window_bounds.size.w,window_bounds.size.h));
+      
   // Initialize watch state
   s_show_seconds_bool = false;
   battery_handler(battery_state_service_peek());
@@ -155,6 +155,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_battery_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_layer));
+  layer_add_child(window_layer, inverter_layer_get_layer(s_inv_layer));
     
 }
 
@@ -174,11 +175,13 @@ static void main_window_unload(Window *window) {
   bitmap_layer_destroy(s_bt_layer);
   gbitmap_destroy(s_bt_connected_bitmap);
   gbitmap_destroy(s_bt_disconnected_bitmap);
+  inverter_layer_destroy(s_inv_layer);
 }
 
 static void init() {
   // Create main Window element and assign to pointer
   s_main_window = window_create();
+  window_set_background_color(s_main_window, GColorBlack);
   
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
