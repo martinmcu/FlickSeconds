@@ -32,8 +32,8 @@ static void update_time() {
   // Create a text buffers
   static char buffer[] = "00:00:00";
   static char date_buffer[16];
-  static char pi_start_buffer[] = "11:15:00";
-  static char pi_end_buffer[] = "11:16:00";
+  static char pi_start_buffer[] = "15:14:00";
+  static char pi_end_buffer[] = "15:15:00";
   static char pi_cmp_buffer[] = "00:00:00";
   
   // Check to see if it's time to hide the seconds
