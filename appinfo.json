@@ -9,6 +9,11 @@
     "resources": {
         "media": [
             {
+                "file": "images/PiBackground.png",
+                "name": "PI_BACKGROUND",
+                "type": "png"
+            },
+            {
                 "file": "images/BTDisconnected.png",
                 "name": "BT_DISCONNECTED",
                 "type": "png"

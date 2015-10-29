@@ -11,6 +11,9 @@ static bool s_show_seconds_bool;
 static int s_show_seconds_duration_int = 15;
 static time_t s_hide_seconds_time_t;
 static InverterLayer *s_inv_layer;
+static GBitmap *s_pi_bitmap;
+static BitmapLayer *s_pi_layer;
+static bool s_pi_time_bool;
 
 static void format_time() {
   if (s_show_seconds_bool == true) {
@@ -29,6 +32,9 @@ static void update_time() {
   // Create a text buffers
   static char buffer[] = "00:00:00";
   static char date_buffer[16];
+  static char pi_start_buffer[] = "11:15:00";
+  static char pi_end_buffer[] = "11:16:00";
+  static char pi_cmp_buffer[] = "00:00:00";
   
   // Check to see if it's time to hide the seconds
   if (temp > s_hide_seconds_time_t) {
@@ -36,6 +42,16 @@ static void update_time() {
     format_time();
   }
 
+  // Detect Pi Time
+  strftime(pi_cmp_buffer, sizeof(pi_cmp_buffer), "%H:%M:%S", tick_time);
+  if(strcmp(pi_cmp_buffer, pi_start_buffer) == 0) {
+    layer_set_hidden(bitmap_layer_get_layer(s_pi_layer), false);
+    vibes_double_pulse();
+  }
+  if(strcmp(pi_cmp_buffer, pi_end_buffer) == 0) {
+    layer_set_hidden(bitmap_layer_get_layer(s_pi_layer), true);
+  }
+  
   // Write the current time into the buffer based on tap state
   if(s_show_seconds_bool == true) {
     if(clock_is_24h_style() == true) {
@@ -61,6 +77,7 @@ static void update_time() {
   // Parse date
   strftime(date_buffer, sizeof(date_buffer), "%a %d %b", tick_time);
   text_layer_set_text(s_date_layer, date_buffer);
+  
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -87,13 +104,14 @@ static void bluetooth_handler(bool connected) {
     vibes_double_pulse();
   }
     
-  // Set colors and connection image
+  // Set connection image
   if (connected == true) {
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_connected_bitmap);
   } else {
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_disconnected_bitmap);    
   }
   
+  // Invert colors if disconnected
   layer_set_hidden(inverter_layer_get_layer(s_inv_layer), connected);
   
 }
@@ -134,18 +152,24 @@ static void main_window_load(Window *window) {
   text_layer_set_text_color(s_battery_layer, GColorWhite);
   text_layer_set_text_alignment(s_battery_layer, GTextAlignmentRight);
   text_layer_set_font(s_battery_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
-  //text_layer_set_text(s_battery_layer, "100%");
+  
+  // Create Pi time BitmapLayer
+  s_pi_bitmap = gbitmap_create_with_resource(RESOURCE_ID_PI_BACKGROUND);
+  s_pi_layer = bitmap_layer_create(GRect(0,17,144,150));
+  bitmap_layer_set_bitmap(s_pi_layer, s_pi_bitmap);
+  layer_set_hidden(bitmap_layer_get_layer(s_pi_layer), true);
   
   // Create bluetooth BitmapLayer
   s_bt_connected_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BT_CONNECTED);
   s_bt_disconnected_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BT_DISCONNECTED);
   s_bt_layer = bitmap_layer_create(GRect(3,3,12,11));
+ 
   
   // Create bluetooth connected InverterLayer
   s_inv_layer = inverter_layer_create(GRect(0,0,window_bounds.size.w,window_bounds.size.h));
       
   // Initialize watch state
-  s_show_seconds_bool = false;
+  s_show_seconds_bool = true;
   battery_handler(battery_state_service_peek());
   bluetooth_handler(bluetooth_connection_service_peek());
   format_time();
@@ -155,6 +179,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_battery_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_layer));
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_pi_layer));
   layer_add_child(window_layer, inverter_layer_get_layer(s_inv_layer));
     
 }
@@ -176,6 +201,10 @@ static void main_window_unload(Window *window) {
   gbitmap_destroy(s_bt_connected_bitmap);
   gbitmap_destroy(s_bt_disconnected_bitmap);
   inverter_layer_destroy(s_inv_layer);
+  
+  // Destroy Pi Time
+  bitmap_layer_destroy(s_pi_layer);
+  gbitmap_destroy(s_pi_bitmap);
 }
 
 static void init() {
